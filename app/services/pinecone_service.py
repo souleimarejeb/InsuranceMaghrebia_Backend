@@ -1,14 +1,13 @@
 import time
 import uuid
-import pinecone
 from app.core.config import config
 from pinecone import Pinecone, ServerlessSpec
 from app.models.schema import SignatureRequest
 from app.services.ai_clip_service import get_image_embedding
+from app.services.signature_service import save_base64
 
 
 def initialize_pinecone():
-
 
     pineconeInst = Pinecone(api_key=config.PINECONE_API_KEY)
 
@@ -18,7 +17,7 @@ def initialize_pinecone():
     if config.PINECONE_INDEX_NAME not in pineconeInst.list_indexes().names():
         pineconeInst.create_index(
             name=config.PINECONE_INDEX_NAME,
-            dimension=1024, 
+            dimension=512, 
             metric='cosine',  
             spec=ServerlessSpec(
             cloud="aws",
@@ -33,10 +32,11 @@ def initialize_pinecone():
 def insert_signature_embedding(signture : SignatureRequest):
    
     try:
-
-        image_embedding= get_image_embedding("/")
         pc = Pinecone(api_key=config.PINECONE_API_KEY)
         
+        image=save_base64(signture.base64_data)
+        image_embedding= get_image_embedding(image)
+
         while not pc.describe_index(config.PINECONE_INDEX_NAME).status['ready']:
             time.sleep(1)
         
@@ -56,30 +56,7 @@ def insert_signature_embedding(signture : SignatureRequest):
             namespace="signatures"
         )
 
-        return {"message": "Signature stored successfully", "signature_id": signture.signature_id}
+        return {"message": "Signature stored successfully", "signature_id": signature_id}
     
     except Exception as e:
         raise RuntimeError(f"Error inserting signature embedding: {str(e)}")
-
-
-# def insert_pinecone(data, embeddings):
-
-#     pc= Pinecone(api_key=config.PINECONE_API_KEY)
-
-#     while not pc.describe_index(config.PINECONE_INDEX_NAME).status['ready']:
-#         time.sleep(1)
-            
-#     index = pc.Index(config.PINECONE_INDEX_NAME)
-#     vectors = []
-#     for d, e in zip(data, embeddings):
-#         vectors.append({
-#         "id": d['id'],
-#         "values": e['values'],
-#         "metadata": {'text': d['text']}
-#     })
-#     index.upsert(
-#             vectors=vectors,
-#             namespace="ns1"
-#         )    
-
-#     return vectors

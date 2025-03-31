@@ -1,15 +1,17 @@
 import torch
 from PIL import Image
 import clip
+from PIL import Image
+from io import BytesIO
 from torchvision import transforms
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
 
-def get_image_embedding(image_path: str):
+def get_image_embedding(image_data: bytes):
     
     try:
-        image = Image.open(image_path).convert("RGB")
+        image = Image.open(BytesIO(image_data)).convert("RGB")
         image = preprocess(image).unsqueeze(0).to(device)
 
         with torch.no_grad():
