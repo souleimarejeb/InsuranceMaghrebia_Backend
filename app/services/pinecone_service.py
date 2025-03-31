@@ -1,4 +1,5 @@
 import time
+import uuid
 import pinecone
 from app.core.config import config
 from pinecone import Pinecone, ServerlessSpec
@@ -29,13 +30,8 @@ def initialize_pinecone():
     return index
 
 
-
-
-
 def insert_signature_embedding(signture : SignatureRequest):
-    """
-    Inserts a signature embedding into Pinecone.
-    """
+   
     try:
 
         image_embedding= get_image_embedding("/")
