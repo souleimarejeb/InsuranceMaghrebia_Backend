@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from app.models.schema import SignatureRequest
+from app.models.schema import SignatureRequest,SignatureData
 from app.services.pinecone_service import initialize_pinecone,insert_pinecone
+from app.services.signature_service import save_base64
 from pinecone import Pinecone
 from app.core.config import config
 router = APIRouter()
@@ -11,7 +12,19 @@ async def store_signature(signature: SignatureRequest):
         return {"message": "Signature stored successfully!", "user_id": signature.user_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+@router.post("/sign")
+async def convertSign(data: SignatureData):
+    """
+    API endpoint to receive a Base64 signature and save it as an image.
+    """
+    try:   
+        file_path = f"signatures/signature.png"  
+        saved_path = save_base64(data.signature_base64, file_path) 
+        return {"message": "Signature stored successfully!", "user_id": saved_path}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+      
 
 @router.get("/testpincone")
 async def testPinecone():
