@@ -1,7 +1,10 @@
 import time
-import pinecone
+import uuid
 from app.core.config import config
 from pinecone import Pinecone, ServerlessSpec
+from app.models.schema import SignatureRequest
+from app.services.ai_clip_service import get_image_embedding
+from app.services.signature_service import save_base64
 
 
 def initialize_pinecone():
@@ -14,7 +17,7 @@ def initialize_pinecone():
     if config.PINECONE_INDEX_NAME not in pineconeInst.list_indexes().names():
         pineconeInst.create_index(
             name=config.PINECONE_INDEX_NAME,
-            dimension=1024, 
+            dimension=512, 
             metric='cosine',  
             spec=ServerlessSpec(
             cloud="aws",
@@ -26,24 +29,34 @@ def initialize_pinecone():
     return index
 
 
-def insert_pinecone(data, embeddings):
+def insert_signature_embedding(signture : SignatureRequest):
+   
+    try:
+        pc = Pinecone(api_key=config.PINECONE_API_KEY)
+        
+        image=save_base64(signture.base64_data)
+        image_embedding= get_image_embedding(image)
 
-    pc= Pinecone(api_key=config.PINECONE_API_KEY)
+        while not pc.describe_index(config.PINECONE_INDEX_NAME).status['ready']:
+            time.sleep(1)
+        
+        index = pc.Index(config.PINECONE_INDEX_NAME)
+        signature_id =str(uuid.uuid4())
+        vector = {
+            "id": signature_id,  
+            "values": image_embedding,
+            "metadata": {
+                "full_name": signture.user_id,
+                "cin": signture.cin
+            }
+        }
+        
+        index.upsert(
+            vectors=[vector],  
+            namespace="signatures"
+        )
 
-    while not pc.describe_index(config.PINECONE_INDEX_NAME).status['ready']:
-        time.sleep(1)
-            
-    index = pc.Index(config.PINECONE_INDEX_NAME)
-    vectors = []
-    for d, e in zip(data, embeddings):
-        vectors.append({
-        "id": d['id'],
-        "values": e['values'],
-        "metadata": {'text': d['text']}
-    })
-    index.upsert(
-            vectors=vectors,
-            namespace="ns1"
-        )    
-
-    return vectors
+        return {"message": "Signature stored successfully", "signature_id": signature_id}
+    
+    except Exception as e:
+        raise RuntimeError(f"Error inserting signature embedding: {str(e)}")
