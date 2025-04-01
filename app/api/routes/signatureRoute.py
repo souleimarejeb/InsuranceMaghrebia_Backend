@@ -14,7 +14,7 @@ async def store_signature(signature: SignatureRequest):
 @router.post("/add")
 async def add(signature: SignatureRequest):
     try:  
-        saved_signature= insert_signature_embedding(signature)  
-        return {"message": "Signature stored successfully!", "user_id": saved_signature}
+        response= insert_signature_embedding(signature)  
+        return {"message": response["message"], "signature_id": signature.cin}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))    
