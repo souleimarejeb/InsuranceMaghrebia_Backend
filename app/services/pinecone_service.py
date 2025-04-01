@@ -2,6 +2,8 @@ import time
 import pinecone
 from app.core.config import config
 from pinecone import Pinecone, ServerlessSpec
+from app.models.schema import SignatureRequest
+from app.services.clip_service import get_image_embedding
 
 
 def initialize_pinecone():
@@ -26,24 +28,31 @@ def initialize_pinecone():
     return index
 
 
-def insert_pinecone(data, embeddings):
+def insert_signature_embedding(signture : SignatureRequest):
+    
+    try:
 
-    pc= Pinecone(api_key=config.PINECONE_API_KEY)
+        image_embedding= get_image_embedding("/")
+        pc = Pinecone(api_key=config.PINECONE_API_KEY)
 
-    while not pc.describe_index(config.PINECONE_INDEX_NAME).status['ready']:
-        time.sleep(1)
-            
-    index = pc.Index(config.PINECONE_INDEX_NAME)
-    vectors = []
-    for d, e in zip(data, embeddings):
-        vectors.append({
-        "id": d['id'],
-        "values": e['values'],
-        "metadata": {'text': d['text']}
-    })
-    index.upsert(
-            vectors=vectors,
-            namespace="ns1"
-        )    
+        while not pc.describe_index(config.PINECONE_INDEX_NAME).status['ready']:
+            time.sleep(1)
 
-    return vectors
+        index = pc.Index(config.PINECONE_INDEX_NAME)
+        vector = {
+            "id": signture.cin,  
+            "values": image_embedding,
+            "metadata": {
+                "full_name": signture.user_id,
+            }
+        }
+
+        index.upsert(
+            vectors=[vector],  
+            namespace="signatures"
+        )
+
+        return {"message": "Signature stored successfully", "signature_id": signture.signature_id}
+
+    except Exception as e:
+        raise RuntimeError(f"Error inserting signature embedding: {str(e)}")

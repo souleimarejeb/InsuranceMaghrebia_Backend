@@ -1,8 +1,6 @@
 import base64
-from io import BytesIO
-from PIL import Image
 from fastapi import APIRouter, HTTPException
-from app.models.schema import SignatureData
+
 
 
 def save_base64(base64_str : str , file_path:str ):
@@ -12,8 +10,6 @@ def save_base64(base64_str : str , file_path:str ):
 
     try:
         image_data = base64.b64decode(base64_str.split(",")[-1])  
-        image = Image.open(BytesIO(image_data))
-        image.save(file_path, format="PNG")  
-        return file_path
+        return image_data
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid Base64 image data: {str(e)}")
