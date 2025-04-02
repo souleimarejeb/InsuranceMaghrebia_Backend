@@ -1,38 +1,37 @@
 import time
 import uuid
 from app.core.config import config
-from pinecone import Pinecone, ServerlessSpec
 from app.models.schema import SignatureRequest
 from app.services.ai_clip_service import get_image_embedding
 from app.services.signature_service import save_base64
 
 
-def initialize_pinecone():
+# def initialize_pinecone():
 
-    pineconeInst = Pinecone(api_key=config.PINECONE_API_KEY)
+#     pineconeInst = Pinecone(api_key=config.PINECONE_API_KEY)
 
-    existing_indexes = pineconeInst.list_indexes().names()
-    print("Existing Indexes:", existing_indexes)
+#     existing_indexes = pineconeInst.list_indexes().names()
+#     print("Existing Indexes:", existing_indexes)
 
-    if config.PINECONE_INDEX_NAME not in pineconeInst.list_indexes().names():
-        pineconeInst.create_index(
-            name=config.PINECONE_INDEX_NAME,
-            dimension=512, 
-            metric='cosine',  
-            spec=ServerlessSpec(
-            cloud="aws",
-            region="us-east-1"
-    ) 
-        )
-    index = pineconeInst.Index(config.PINECONE_INDEX_NAME)
-    print("Index Object:", index)
-    return index
+#     if config.PINECONE_INDEX_NAME not in pineconeInst.list_indexes().names():
+#         pineconeInst.create_index(
+#             name=config.PINECONE_INDEX_NAME,
+#             dimension=512, 
+#             metric='cosine',  
+#             spec=ServerlessSpec(
+#             cloud="aws",
+#             region="us-east-1"
+#     ) 
+#         )
+#     index = pineconeInst.Index(config.PINECONE_INDEX_NAME)
+#     print("Index Object:", index)
+#     return index
 
 
 def insert_signature_embedding(signture : SignatureRequest):
    
     try:
-        pc = Pinecone(api_key=config.PINECONE_API_KEY)
+        pc = config.pc
         
         image=save_base64(signture.base64_data)
         image_embedding= get_image_embedding(image)
